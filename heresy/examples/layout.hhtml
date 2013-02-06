@@ -1,0 +1,6 @@
+<html>
+    <body>
+        <h1><%= block('title') %></h1>
+        <%= block('content') %>
+    </body>
+</html>
