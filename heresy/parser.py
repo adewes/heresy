@@ -57,6 +57,8 @@ class Parser:
     
   def clear(self):
     self._blocks = []
+    self._lineNumbers = []
+    self._source = ""
     
   def blocks(self):
   	return self._blocks
@@ -64,6 +66,7 @@ class Parser:
   def parseString(self,string):
     remainingString = string
     self.clear()
+    self._source = string
     textMode = True
     codeDelimiter = None
     reFlags = re.I | re.M | re.S
@@ -72,8 +75,7 @@ class Parser:
       if textMode:
         textBlockMatch = re.search(r"^(.*?)(\<\%\=*h*)(.*)$",remainingString,reFlags)
         if textBlockMatch == None:
-          print "No code block found..."
-          #There's only text in the file...
+          #There's only text in the file left...
           self._blocks.append(TextBlock(remainingString,firstLineNumber = currentLineNumber))
           remainingString = ""
         else:
@@ -101,15 +103,39 @@ class Parser:
         remainingString = codeBlockMatch.group(2) 
         textMode = True
         codeDelimiter = None
-  
+
+  def getSourceExcerpt(self,lineNumber):
+    lines = self._source.split("\n")
+    return "\n".join(lines[max(0,lineNumber-2):min(len(lines),lineNumber)])
+    
+  def translateLineNumber(self,lineNumber):
+    ind = -1
+    matchedLineNumber = -1
+    for i,number in enumerate(self._lineNumbers):
+      if number <= lineNumber:
+        ind = i
+        matchedLineNumber = number
+      else:
+        break
+    if ind >= 0:
+      offset = lineNumber - matchedLineNumber
+      return self._blocks[ind].firstLineNumber()+offset
+    return -1
+
   def _escapeString(self,string):
     return string.replace("'''",r"\'\'\'")
 
   def generateCode(self):
+
+    def _getCurrentLineNumber(string):
+      return len(string.split("\n"))-1
+
     indentationLevel = 0
     code = "import cgi\n"
     indentationCharacter = "  "
+    self._lineNumbers = []
     for block in self._blocks:
+      self._lineNumbers.append(_getCurrentLineNumber(code))
       if type(block) == TextBlock:
         text = block.content()
         code+="\n"+indentationCharacter*indentationLevel+"_stringBuffer.write('''"+self._escapeString(text)+"''')"
