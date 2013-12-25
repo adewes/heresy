@@ -1,0 +1,20 @@
+<% extends("examples/layout.html") %>
+
+<% blocks.title = 'the ultimate answer is: %d' % 42 %>
+
+<% foo = 'bar' %>
+<% bar = 'foo' %>
+
+<% with blocks.content: %>
+<ul>
+    <% for i in range(0,10): %>
+    	<li><%= i%></li> 
+    <%-%>
+</ul>
+foobar = <%= foobar %>
+<%= foo %>
+<%= bar %>
+<%= include("examples/_partial.html",name = "Andreas",foo = foo) %>
+<%-%>
+
+<% with blocks.footer: %><p>hi!</p><%-%>

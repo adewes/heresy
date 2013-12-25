@@ -106,7 +106,9 @@ class Parser:
 
   def getSourceExcerpt(self,lineNumber):
     lines = self._source.split("\n")
-    return "\n".join(lines[max(0,lineNumber-2):min(len(lines),lineNumber)])
+    start_line = max(0,lineNumber-2)
+    end_line = min(len(lines),lineNumber+1)
+    return "\n".join(lines[start_line:end_line])
     
   def translateLineNumber(self,lineNumber):
     ind = -1
@@ -125,47 +127,49 @@ class Parser:
   def _escapeString(self,string):
     return string.replace("'''",r"\'\'\'")
 
-  def generateCode(self):
+  def generateCode(self,strip_whitespace = False):
 
     def _getCurrentLineNumber(string):
       return len(string.split("\n"))-1
 
     indentationLevel = 0
-    code = "import cgi\n"
+    code = ""
     indentationCharacter = "  "
     self._lineNumbers = []
     for block in self._blocks:
       self._lineNumbers.append(_getCurrentLineNumber(code))
       if type(block) == TextBlock:
         text = block.content()
-        code+="\n"+indentationCharacter*indentationLevel+"_stringBuffer.write('''"+self._escapeString(text)+"''')"
+        if strip_whitespace:
+          stripped_text = text.strip()
+        else:
+          stripped_text = text
+        if stripped_text:
+          code+="\n"+indentationCharacter*indentationLevel+"write('''"+self._escapeString(stripped_text)+"''')"
       else:
         codeBlock = block.content()
         lines = codeBlock.split("\n")
         for line in lines:
-          increaseIndentation = False
-          decreaseIndentation = False
+          indentationDiff = 0
           match = re.search(r":(\s*)$",line, re.I | re.M)
           if match:
-            line=line[:-len(match.group(1))]
-            increaseIndentation = True
-          else:
-            match = re.search(r"(-\s*)$",line,re.I | re.M)
-            if match:
+            if len(match.group(1)):
               line=line[:-len(match.group(1))]
-              decreaseIndentation = True
+            indentationDiff = 1
+          else:
+            match = re.search(r"(\-+)\s*$",line,re.I | re.M)
+            if match:
+              line=line[:-len(match.group(0))]
+              indentationDiff = -len(match.group(1))
           if block.delimiter() == '<%':
             code+="\n"+indentationCharacter*indentationLevel+line.strip()
           elif block.delimiter() == '<%=':
-            code+="\n"+indentationCharacter*indentationLevel+"_stringBuffer.write(str("+line.strip()+"))"
+            code+="\n"+indentationCharacter*indentationLevel+"write("+line.strip()+")"
           elif block.delimiter() == '<%=h':
-            code+="\n"+indentationCharacter*indentationLevel+"_stringBuffer.write(cgi.escape(str("+line.strip()+")))"
+            code+="\n"+indentationCharacter*indentationLevel+"write("+line.strip()+",escape = True)"
           else:
             raise Exception("Code generator: Unknown code delimiter: %s" % codeBlock.delimiter())
-          if increaseIndentation:
-            indentationLevel+=1
-          if decreaseIndentation:
-            indentationLevel-=1
+          indentationLevel+=indentationDiff
     if indentationLevel != 0:
       raise Exception("Code generator: Code brackets do not match!")
     return code.lstrip().rstrip()
