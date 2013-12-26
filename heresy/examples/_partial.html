@@ -1,6 +1,5 @@
+<% with blocks.nomnom : %>
 <h2>Test</h2>
-
-<% nope = "yes!" %>
 
 <%
     import pytest
@@ -8,8 +7,9 @@
 
     def piratize(foo):
         return "%s, haaarrrr!" % foo 
-        -
+        end
 %>
     <%=h "Hello %s!" % piratize(name) %>
 
     Foo: <%= foo %>
+<% end %>

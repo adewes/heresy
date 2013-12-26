@@ -127,25 +127,22 @@ class Parser:
   def _escapeString(self,string):
     return string.replace("'''",r"\'\'\'")
 
-  def generateCode(self,strip_whitespace = False):
+  def generateCode(self,strip_whitespace = True):
 
     def _getCurrentLineNumber(string):
       return len(string.split("\n"))-1
 
     indentationLevel = 0
-    code = ""
+    code = "import cgi"
     indentationCharacter = "  "
     self._lineNumbers = []
+    text_to_write = ""
     for block in self._blocks:
       self._lineNumbers.append(_getCurrentLineNumber(code))
       if type(block) == TextBlock:
         text = block.content()
-        if strip_whitespace:
-          stripped_text = text.strip()
-        else:
-          stripped_text = text
-        if stripped_text:
-          code+="\n"+indentationCharacter*indentationLevel+"write('''"+self._escapeString(stripped_text)+"''')"
+        if text and (not strip_whitespace or text.strip()):
+          code+="\n"+indentationCharacter*indentationLevel+"write('''"+self._escapeString(text)+"''')"
       else:
         codeBlock = block.content()
         lines = codeBlock.split("\n")
@@ -157,16 +154,16 @@ class Parser:
               line=line[:-len(match.group(1))]
             indentationDiff = 1
           else:
-            match = re.search(r"(\-+)\s*$",line,re.I | re.M)
+            match = re.search(r"(end)\s*$",line,re.I | re.M)
             if match:
               line=line[:-len(match.group(0))]
-              indentationDiff = -len(match.group(1))
+              indentationDiff = -1
           if block.delimiter() == '<%':
             code+="\n"+indentationCharacter*indentationLevel+line.strip()
           elif block.delimiter() == '<%=':
-            code+="\n"+indentationCharacter*indentationLevel+"write("+line.strip()+")"
+            code+="\n"+indentationCharacter*indentationLevel+"write(\"%s\" % ("+line.strip()+"))"
           elif block.delimiter() == '<%=h':
-            code+="\n"+indentationCharacter*indentationLevel+"write("+line.strip()+",escape = True)"
+            code+="\n"+indentationCharacter*indentationLevel+"write(cgi.escape(\"%s\" % ("+line.strip()+")))"
           else:
             raise Exception("Code generator: Unknown code delimiter: %s" % codeBlock.delimiter())
           indentationLevel+=indentationDiff

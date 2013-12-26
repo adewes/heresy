@@ -6,15 +6,16 @@
 <% bar = 'foo' %>
 
 <% with blocks.content: %>
-<ul>
-    <% for i in range(0,10): %>
-    	<li><%= i%></li> 
-    <%-%>
-</ul>
-foobar = <%= foobar %>
-<%= foo %>
-<%= bar %>
-<%= include("examples/_partial.html",name = "Andreas",foo = foo) %>
-<%-%>
+    <ul>
+        <% for i in range(0,10): %>
+        	<li><%= i%></li> 
+        <%end%>
+    </ul>
 
-<% with blocks.footer: %><p>hi!</p><%-%>
+    foobar = <%= foobar %>
+    foo = <%= foo %>
+    bar = <%= bar %>
+    <%= include("examples/_partial.html",foo = foo,bar = bar,name = "Andreas").nomnom %>
+<%end%>
+
+<% with blocks.footer: %><p>hi!</p><%end%>
