@@ -127,14 +127,19 @@ class Parser:
   def _escapeString(self,string):
     return string.replace("'''",r"\'\'\'")
 
-  def generateCode(self,strip_whitespace = True):
+  def generateCode(self,strip_whitespace = True,ignore_exceptions = True):
 
     def _getCurrentLineNumber(string):
       return len(string.split("\n"))-1
 
+
     indentationLevel = 0
-    code = "import cgi"
     indentationCharacter = "  "
+
+    def ind(d = 0):
+      return (indentationLevel+d)*indentationCharacter
+
+    code = "import cgi"
     self._lineNumbers = []
     text_to_write = ""
     for block in self._blocks:
@@ -159,9 +164,14 @@ class Parser:
               line=line[:-len(match.group(0))]
               indentationDiff = -1
           if block.delimiter() == '<%':
-            code+="\n"+indentationCharacter*indentationLevel+line.strip()
+            code+="\n"+ind()+line.strip()
           elif block.delimiter() == '<%=':
-            code+="\n"+indentationCharacter*indentationLevel+"write(\"%s\" % ("+line.strip()+"))"
+            if ignore_exceptions:
+              code+="\n"+ind()+ \
+                  "try:\n"+ind(1)+"write(\"%s\" % ("+line.strip()+"))"+ \
+                  "\n"+ind()+"except (AttributeError,KeyError):\n"+ind(1)+"pass"
+            else:
+              code+="\n"+indentationCharacter*indentationLevel+"write(\"%s\" % ("+line.strip()+"))"
           elif block.delimiter() == '<%=h':
             code+="\n"+indentationCharacter*indentationLevel+"write(cgi.escape(\"%s\" % ("+line.strip()+")))"
           else:

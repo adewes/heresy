@@ -6,6 +6,7 @@ class FileLoader(BaseLoader):
     def __init__(self,paths = []):
         super(FileLoader,self).__init__()
         self._paths = [os.path.abspath(p) for p in paths]
+        print self._paths
 
     def add_path(self,path):
         self._paths.append(os.path.abspath(path))

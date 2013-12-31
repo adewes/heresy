@@ -6,13 +6,36 @@ class RenderContext(object):
 
     def __init__(self,context):
         self._environment = None        
-        self.dict = context
+        if not isinstance(context,dict):
+            raise TypeError("context is not a dictionary!")
         self._write_buffer = []
+        self.dict = context
         self._blocks = BlockManager(self)
         self.layout = None
         self.dict['write'] = [].append
         for name in self.exports:
             self.dict[name] = getattr(self,name)
+
+    def __getitem__(self,key):
+        return self.dict[key]
+
+    def __setitem__(self,key,value):
+        self.dict[key] = value
+
+    def __delitem__(self,key):
+        del self.dict[key]
+
+    def __contains__(self,key):
+        return True if key in self.dict else False
+
+    def keys(self):
+        return self.dict.keys()
+
+    def values(self):
+        return self.dict.values()
+
+    def items(self):
+        return self.dict.items()
 
     @property
     def environment(self):
