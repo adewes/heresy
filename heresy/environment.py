@@ -13,7 +13,6 @@ class Environment(object):
             return self._template_cache[name]
         if not self._loader:
             raise AttributeError("No template loader defined!")
-        print "Loading %s" % name
         source = self._loader.load(name)
         template = template_class(name,source,self)
         if self._use_cache:

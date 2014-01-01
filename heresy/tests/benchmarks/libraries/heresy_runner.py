@@ -6,6 +6,9 @@ class Loader(heresy.loaders.base.BaseLoader):
     def __init__(self,d):
         self.d = d
 
+    def is_obsolete(self,key):
+        return False
+
     def load(self,key):
         if not key in self.d:
             raise KeyError("Template not found: %s" % key)
