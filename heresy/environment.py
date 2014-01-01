@@ -9,8 +9,8 @@ class Environment(object):
         self._template_cache = {}
 
     def get_template(self,name,template_class = Template):
-#        if name in self._template_cache:
-#            return self._template_cache[name]
+        if name in self._template_cache:
+            return self._template_cache[name]
         if not self._loader:
             raise AttributeError("No template loader defined!")
         source = self._loader.load(name)

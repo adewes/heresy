@@ -12,7 +12,7 @@ class Loader(BaseLoader):
         return self.d[template], template, lambda: True
 
 def test(template_name,context,templates):
-    env = jinja2.Environment(loader = Loader(templates),cache_size = 100)
+    env = jinja2.Environment(loader = Loader(templates))
     template = env.get_template(template_name)
 
     def run_test():

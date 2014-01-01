@@ -1,6 +1,6 @@
 import cgi
 
-class RenderContext(object):
+class RenderContext(dict):
 
     exports = ['blocks','extends','include','environment']
 
@@ -8,34 +8,48 @@ class RenderContext(object):
         self._environment = None        
         if not isinstance(context,dict):
             raise TypeError("context is not a dictionary!")
+
         self._write_buffer = []
-        self.dict = context
+        self._builtins = {}
         self._blocks = BlockManager(self)
+
         self.layout = None
-        self.dict['write'] = [].append
+
+        self.builtins['write'] = [].append
+        
         for name in self.exports:
-            self.dict[name] = getattr(self,name)
+            self.builtins[name] = getattr(self,name)
+        
+        self.variables = context
+        
+    @property
+    def write(self):
+        return self.builtins['write']
 
-    def __getitem__(self,key):
-        return self.dict[key]
+    @write.setter
+    def write(self,value):
+        self.builtins['write'] = self.globals['write'] = value
 
-    def __setitem__(self,key,value):
-        self.dict[key] = value
+    @property
+    def globals(self):
+        return self._globals
 
-    def __delitem__(self,key):
-        del self.dict[key]
+    @property
+    def blocks(self):
+        return self._blocks
 
-    def __contains__(self,key):
-        return True if key in self.dict else False
+    @property
+    def variables(self):
+        return self._variables
 
-    def keys(self):
-        return self.dict.keys()
+    @property
+    def builtins(self):
+        return self._builtins
 
-    def values(self):
-        return self.dict.values()
-
-    def items(self):
-        return self.dict.items()
+    @variables.setter
+    def variables(self,variables):
+        self._variables = variables
+        self.update_globals()
 
     @property
     def environment(self):
@@ -45,17 +59,20 @@ class RenderContext(object):
     def environment(self,environment):
         self._environment = environment
 
-    @property
-    def blocks(self):
-        return self._blocks
+    def update_globals(self):
+        self._globals = dict(self.variables.items()+self.builtins.items())
 
     def extends(self,filename):
         self.layout = filename
 
     def include(self,filename,**kwargs):
         template = self.environment.get_template(filename)
-        context = RenderContext(kwargs)
-        return template.render(context)
+        last_variables = self.variables
+        try:
+            self.variables = kwargs
+            template.render_include(self)
+        finally:
+            self.variables = last_variables
 
 class BlockGuard(object):
 
@@ -70,15 +87,15 @@ class BlockGuard(object):
         return self
 
     def __enter__(self):
-        self._last_write = self._context.dict['write']
+        self._last_write = self._context.write
         if self._write_buffer and not self._append:
-            self._context.dict['write'] = [].append
+            self._context.write = [].append
         else:
-            self._context.dict['write'] = self._write_buffer.append
+            self._context.write = self._write_buffer.append
         return self
 
     def __exit__(self,type = None,value = None,traceback = None):
-        self._context.dict['write'] = self._last_write
+        self._context.write = self._last_write
         return False
 
     def __unicode__(self):

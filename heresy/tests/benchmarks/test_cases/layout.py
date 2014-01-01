@@ -1,4 +1,4 @@
-repetitions = 1000
+repetitions = 10000
 
 heresy = {
     'context' : {},

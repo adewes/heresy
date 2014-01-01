@@ -16,17 +16,15 @@ heresy = {
     <table>
         <% for person in people: %>
         <tr>
-            <%= include('_person.html',**person) %>
+            <% include('_person.html',**person) %>
         </tr>
         <% end %>
     </table>
     """,
     '_person.html' : """
-    <tr>
         <td><%=h first_name %></td>
         <td><%=h last_name %></td>
         <td><%=h email %></td>
-    </tr>
     """}
 }
 
@@ -44,11 +42,9 @@ jinja2 = {
     </table>
     """,
     '_person.html' : """
-    <tr>
         <td>{{person.first_name|escape}}</td>
         <td>{{person.last_name|escape}}</td>
         <td>{{person.email|escape}}</td>
-    </tr>
     """}
 }
 
@@ -66,10 +62,8 @@ django = {
     </table>
     """,
     '_person.html' : """
-    <tr>
         <td>{{person.first_name|escape}}</td>
         <td>{{person.last_name|escape}}</td>
         <td>{{person.email|escape}}</td>
-    </tr>
     """}
 }
