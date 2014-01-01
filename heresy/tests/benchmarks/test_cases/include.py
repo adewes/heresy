@@ -16,15 +16,15 @@ heresy = {
     <table>
         <% for person in people: %>
         <tr>
-            <% include('_person.html',**person) %>
+            <% include('_person.html',person=person) %>
         </tr>
         <% end %>
     </table>
     """,
     '_person.html' : """
-        <td><%=h first_name %></td>
-        <td><%=h last_name %></td>
-        <td><%=h email %></td>
+        <td><%=h person['first_name'] %></td>
+        <td><%=h person['last_name'] %></td>
+        <td><%=h person['email'] %></td>
     """}
 }
 

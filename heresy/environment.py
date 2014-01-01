@@ -3,19 +3,21 @@ from heresy.parser import Parser
 
 class Environment(object):
 
-    def __init__(self,loader = None,cache_size = 50):
+    def __init__(self,loader = None,use_cache = True):
         self._loader = loader
-        self._cache_size = cache_size
+        self._use_cache = use_cache
         self._template_cache = {}
 
     def get_template(self,name,template_class = Template):
-        if name in self._template_cache:
+        if self._use_cache and name in self._template_cache and hasattr(self._loader,'is_obsolete') and not self._loader.is_obsolete(name):
             return self._template_cache[name]
         if not self._loader:
             raise AttributeError("No template loader defined!")
+        print "Loading %s" % name
         source = self._loader.load(name)
         template = template_class(name,source,self)
-        self._template_cache[name] = template
+        if self._use_cache:
+            self._template_cache[name] = template
         return template
 
     def template_from_string(self,name,string):
