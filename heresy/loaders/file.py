@@ -1,14 +1,14 @@
 from heresy.loaders.base import BaseLoader
 import os
-import os.path
 
 class FileLoader(BaseLoader):
 
-    def __init__(self,paths = []):
+    def __init__(self,paths=None):
+        if paths is None:
+            paths = ['']
         super(FileLoader,self).__init__()
         self._paths = [os.path.abspath(p) for p in paths]
         self._mtimes = {}
-        print self._paths
 
     def add_path(self,path):
         self._paths.append(os.path.abspath(path))
@@ -28,7 +28,7 @@ class FileLoader(BaseLoader):
 
     def get_full_path(self,filename):
         for path in self._paths:
-            full_path = path + "/" + filename
+            full_path = os.path.abspath(os.path.join(path, filename))
             if os.path.exists(full_path) and os.path.isfile(full_path):
                 return full_path
         raise IOError("Template not found: %s" % filename)

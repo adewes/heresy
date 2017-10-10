@@ -2,7 +2,7 @@ import cgi
 
 class RenderContext(dict):
 
-    exports = ['blocks','extends','include','environment']
+    exports = ['blocks', 'extends', 'include', 'environment', 'write']
 
     def __init__(self,context):
         self._environment = None        
@@ -15,20 +15,18 @@ class RenderContext(dict):
 
         self.layout = None
 
-        self.builtins['write'] = [].append
-        
         for name in self.exports:
-            self.builtins[name] = getattr(self,name)
+            self.builtins[name] = getattr(self, name)
         
         self.variables = context
         
     @property
-    def write(self):
-        return self.builtins['write']
+    def write_buffer(self):
+        return self._write_buffer
 
-    @write.setter
-    def write(self,value):
-        self.builtins['write'] = self.globals['write'] = value
+    @write_buffer.setter
+    def write_buffer(self, value):
+        self._write_buffer = value
 
     @property
     def globals(self):
@@ -59,8 +57,12 @@ class RenderContext(dict):
     def environment(self,environment):
         self._environment = environment
 
+    def write(self, value):
+        self._write_buffer.append(value)
+
     def update_globals(self):
-        self._globals = dict(self.variables.items()+self.builtins.items())
+        self._globals = self.variables.copy()
+        self._globals.update(self.builtins)
 
     def extends(self,filename):
         self.layout = filename
@@ -70,69 +72,66 @@ class RenderContext(dict):
         last_variables = self.variables
         try:
             self.variables = kwargs
-            template.render_include(self)
+            return template.render_include(self)
         finally:
             self.variables = last_variables
 
 class BlockGuard(object):
 
-    def __init__(self,name,context):
+    def __init__(self, name, context):
         self._name = name
         self._context = context
         self._write_buffer = []
-        self._append = False
+        self._overwrite = False
 
-    def __call__(self,append = False):
-        self._append = append
+    def __call__(self, overwrite=False):
+        self._overwrite = overwrite
         return self
 
     def __enter__(self):
-        self._last_write = self._context.write
-        if self._write_buffer and not self._append:
-            self._context.write = [].append
+        self._last_write_buffer = self._context.write_buffer
+        if not self._write_buffer or self._overwrite:
+            self._write_buffer = []
+            self._context.write_buffer = self._write_buffer
         else:
-            self._context.write = self._write_buffer.append
+            self._context.write_buffer = []
         return self
 
     def __exit__(self,type = None,value = None,traceback = None):
-        self._context.write = self._last_write
+        self._context.write_buffer = self._last_write_buffer
         return False
 
-    def __unicode__(self):
-        return ''.join(self._write_buffer)
-
     def __str__(self):
-        return unicode(self).encode("utf-8")
+        return ''.join(self._write_buffer)
 
     def clear(self):
         self._write_buffer = []
 
-    def write(self,value):
-        if value:
-            self._write_buffer.append(value)
+    def write(self, value):
+        if not value:
+            return
+        self._write_buffer.append(value)
+
 
 class BlockManager(object):
 
     def __init__(self,context):
-        self._context = context
+        self.__dict__['_context'] = context
 
-    def __getattr__(self,name):
-        setattr(self,name,BlockGuard(name,self._context))
-        return getattr(self,name)
-
-    def __unicode__(self):
-        if hasattr(self,'main'):
-            return unicode(self.main)
-        return u""
+    def __getattr__(self, name):
+        super().__setattr__(name, BlockGuard(name, self._context))
+        return getattr(self, name)
 
     def __str__(self):
-        return unicode(self).encode("utf-8")
+        if hasattr(self,'main'):
+            return str(self.main)
+        return ""
 
-    def __setattr__(self,name,value):
-        if hasattr(self,name):
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
             attribute = getattr(self,name)
-            if isinstance(attribute,BlockGuard) and not isinstance(value,BlockGuard):
+            if isinstance(attribute, BlockGuard) and not isinstance(value, BlockGuard):
                 attribute.clear()
                 attribute.write("%s" % value)
                 return
-        super(BlockManager,self).__setattr__(name,value)
+        super(BlockManager,self).__setattr__(name, value)

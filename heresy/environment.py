@@ -8,7 +8,7 @@ class Environment(object):
         self._use_cache = use_cache
         self._template_cache = {}
 
-    def get_template(self,name,template_class = Template):
+    def get_template(self, name, template_class = Template):
         if self._use_cache and name in self._template_cache and hasattr(self._loader,'is_obsolete') and not self._loader.is_obsolete(name):
             return self._template_cache[name]
         if not self._loader:

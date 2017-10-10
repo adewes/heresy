@@ -13,7 +13,7 @@ class Template(object):
         parser = Parser()
         parser.parseString(self._source)
         self._code = parser.generateCode()
-        self._bytecode = compile(self._code,self._url,'exec')
+        self._bytecode = compile(self._code, self._url, 'exec')
 
     @property
     def code(self):
@@ -31,16 +31,17 @@ class Template(object):
     def environment(self):
         return self._environment
 
-    def render_include(self,context):
-        exec self.bytecode in context.globals
+    def render_include(self, context):
+        exec(self.bytecode, context.globals)
+        return context.blocks
 
-    def render(self,context):
+    def render(self, context):
         context.environment = self.environment
         with context.blocks.main:
-            exec self.bytecode in context.globals
+            exec(self.bytecode, context.globals)
         if context.layout:
             template = self.environment.get_template(context.layout)
             context.layout = None
-            context.blocks.main = ""
+            context.blocks.main.clear()
             return template.render(context)
         return context.blocks
